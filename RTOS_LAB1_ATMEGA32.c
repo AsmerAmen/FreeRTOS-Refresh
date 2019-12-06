@@ -19,23 +19,6 @@
  /* create Queue */
 xQueueHandle xQueue;
 
-ISR(ADC_vect)
-{
-//	clr_bit(SREG, 7);
-//	LCD_voidClear();
-//	LCD_voidString((U8* const)"ISR");
-//	_delay_ms(500);
-//	volatile portBASE_TYPE xStatus;
-//	U16 Analog = ( ADCH * 500 ) / RESOLUTION ;
-//	int temp = (int) Analog;
-//	xStatus = xQueueSendFromISR(xQueue, &temp, 0);
-//	if(xStatus != pdPASS){
-//		LCD_voidClear();
-//		LCD_voidString((U8* const)"Failed to send");
-//	}
-//	set_bit(ADCSRA, 4);
-//	set_bit(SREG, 7);
-}
 
 
 /* Define Tasks Priorities */
@@ -64,11 +47,12 @@ int main(void)
 	ADC_voidInit();
 	ADC_voidInterrupt();
 
+
 	LCD_voidClear();
 	LCD_voidString((U8* const)"ADC Interrupt.");
 	_delay_ms(2000);
 
-	xQueue = xQueueCreate(1, sizeof(int));
+	xQueue = xQueueCreate(5, sizeof(int));
 	if(xQueue != NULL){
 		LCD_voidClear();
 		LCD_voidString((U8* const)"Queue Created.");
@@ -103,7 +87,7 @@ int main(void)
 			if(xStatus == pdPASS){
 				LCD_voidClear();
 				LCD_voidString((U8* const)"Temp: ");
-				LCD_voidInteger(intTemp);
+				LCD_voidInteger((int)intTemp);
 			}
 			else{
 //				LCD_voidClear();
@@ -140,3 +124,23 @@ void task2_code(void*pvParamter){
 //	vTaskDelay(2000);
 }
 
+
+
+void __vector_16 (void)
+{
+	clr_bit(SREG, 7);
+//	LCD_voidClear();
+//	LCD_voidString((U8* const)"ISR");
+//	_delay_ms(500);
+
+	volatile portBASE_TYPE xStatus;
+	U16 Analog = ( ADCH * 500 ) / RESOLUTION ;
+	int temp = (int) Analog;
+	xStatus = xQueueSendToBackFromISR(xQueue, (const void *) &temp, 0);
+	if(xStatus != pdPASS){
+		LCD_voidClear();
+		LCD_voidString((U8* const)"Failed to send");
+	}
+	set_bit(ADCSRA, 4);
+	set_bit(SREG, 7);
+}
